@@ -3,6 +3,9 @@
 import { useState } from "react";
 
 const Translator = () => {
+  // 翻訳されたテキストを保存するための state
+  const [translation, setTranslation] = useState<string>();
+
   // 認識されたテキストを保存するための state
   const [text, setText] = useState<string>();
 
@@ -30,6 +33,20 @@ const Translator = () => {
 
       // 認識されたテキストを保存
       setText(transcript);
+
+      // 翻訳をリクエストする
+      const results = await fetch("/api/translate", {
+        method: "POST",
+        body: JSON.stringify({
+          text: transcript,
+          language: "en-US",
+        }),
+      }).then((r) => r.json());
+
+      console.log(results);
+
+      // 翻訳されたテキストを保存
+      setTranslation(results.text);
     };
 
     // 録音を開始します。
@@ -106,7 +123,7 @@ const Translator = () => {
 
       <div className="max-w-lg mx-auto mt-12">
         <p className="mb-4">Spoken Text:{text}</p>
-        <p>Translation:</p>
+        <p> Translation: {translation}</p>
       </div>
     </div>
   );
