@@ -47,6 +47,10 @@ const Translator = () => {
 
       // 翻訳されたテキストを保存
       setTranslation(results.text);
+
+      // 翻訳されたテキストを読み上げる
+      const utterance = new SpeechSynthesisUtterance(results.text);
+      window.speechSynthesis.speak(utterance);
     };
 
     // 録音を開始します。
