@@ -1,9 +1,40 @@
 "use client";
 
+import { useState } from "react";
+
 const Translator = () => {
+  // 認識されたテキストを保存するための state
+  const [text, setText] = useState<string>();
+
   const isActive = false;
   const isSpeechDetected = false;
   const language = "ja-JP";
+
+  // 録音を処理する関数
+  function handleOnRecord() {
+    console.log("hello");
+
+    // クロスブラウザ対応のため、SpeechRecognition オブジェクトを取得
+    const SpeechRecognition =
+      window.SpeechRecognition || window.webkitSpeechRecognition;
+
+    // Speech Recognition API のインスタンスを生成
+    const recognition = new SpeechRecognition();
+
+    recognition.onresult = async function (event) {
+      // ログとして書き出し中身を確認
+      console.log("event", event);
+
+      // 認識されたテキストを取得
+      const transcript = event.results[0][0].transcript;
+
+      // 認識されたテキストを保存
+      setText(transcript);
+    };
+
+    // 録音を開始します。
+    recognition.start();
+  }
 
   return (
     <div className="mt-12 px-4">
@@ -64,6 +95,7 @@ const Translator = () => {
                     ? "text-white bg-red-500"
                     : "text-zinc-400 bg-zinc-900"
                 } color-white py-3 rounded-sm`}
+                onClick={handleOnRecord}
               >
                 {isActive ? "Stop" : "Record"}
               </button>
@@ -73,7 +105,7 @@ const Translator = () => {
       </div>
 
       <div className="max-w-lg mx-auto mt-12">
-        <p className="mb-4">Spoken Text:</p>
+        <p className="mb-4">Spoken Text:{text}</p>
         <p>Translation:</p>
       </div>
     </div>
