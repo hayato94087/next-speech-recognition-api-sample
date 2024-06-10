@@ -1,21 +1,63 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 const Translator = () => {
   // 翻訳されたテキストを保存するための state
   const [translation, setTranslation] = useState<string>();
-
+  // 音声合成のための voice を保存するための state
+  const [voices, setVoices] = useState<Array<SpeechSynthesisVoice>>();
+  // 翻訳する言語を保存するための state
+  const [language, setLanguage] = useState<string>("en-US");
   // 認識されたテキストを保存するための state
   const [text, setText] = useState<string>();
-
+  // true の場合は録音中、false の場合は録音していない
   const isActive = false;
+  // true の場合は音声が認識されている、false の場合は認識されていない
   const isSpeechDetected = false;
-  const language = "ja-JP";
+
+  // 利用可能な言語の一覧
+  // [ "ar-001", "bg-BG", "ca-ES", "cs-CZ", ... ]
+  const availableLanguages = Array.from(
+    new Set(voices?.map(({ lang }) => lang))
+  ).sort();
+  // console.log(availableLanguages);
+
+  // 音声合成に利用する voice を指定の言語から選択
+  // [{default:false, lang:"en-US", localService:true, name:"Aaron", voiceURI:"Aaron"}, {default:false, lang:"en-US", localService:true, name:"Bad News", voiceURI:"Bad News"}, ...]
+  const availableVoices = voices?.filter(({ lang }) => lang === language);
+  // console.log(availableVoices);
+
+  // 音声合成を行うための voice を選択
+  // Google または Luciana の voice が利用可能な場合はそれを選択
+  // {default:false, lang:"en-US", localService:false, name:"Google US English", voiceURI:"Google US English"}
+  const activeVoice =
+    availableVoices?.find(({ name }) => name.includes("Google")) ||
+    availableVoices?.find(({ name }) => name.includes("Luciana")) ||
+    availableVoices?.[0];
+  // console.log(activeVoice);
+
+  useEffect(() => {
+    // 音声合成に必要な voice の一覧を取得
+    // https://developer.mozilla.org/en-US/docs/Web/API/SpeechSynthesis/getVoices
+    const voices = window.speechSynthesis.getVoices();
+    // データが存在するか確認し保存
+    if (Array.isArray(voices) && voices.length > 0) {
+      setVoices(voices);
+      return;
+    }
+    // データが存在しない場合は onvoiceschanged イベントを利用して取得
+    if ("onvoiceschanged" in window.speechSynthesis) {
+      window.speechSynthesis.onvoiceschanged = function () {
+        const voices = window.speechSynthesis.getVoices();
+        setVoices(voices);
+      };
+    }
+  }, []);
 
   // 録音を処理する関数
   function handleOnRecord() {
-    console.log("hello");
+    // console.log("handleOnRecord");
 
     // クロスブラウザ対応のため、SpeechRecognition オブジェクトを取得
     const SpeechRecognition =
@@ -26,7 +68,7 @@ const Translator = () => {
 
     recognition.onresult = async function (event) {
       // ログとして書き出し中身を確認
-      console.log("event", event);
+      // console.log("event", event);
 
       // 認識されたテキストを取得
       const transcript = event.results[0][0].transcript;
@@ -39,17 +81,19 @@ const Translator = () => {
         method: "POST",
         body: JSON.stringify({
           text: transcript,
-          language: "en-US",
+          language,
         }),
       }).then((r) => r.json());
-
-      console.log(results);
+      // console.log(results);
 
       // 翻訳されたテキストを保存
       setTranslation(results.text);
 
       // 翻訳されたテキストを読み上げる
       const utterance = new SpeechSynthesisUtterance(results.text);
+      if (activeVoice) {
+        utterance.voice = activeVoice;
+      }
       window.speechSynthesis.speak(utterance);
     };
 
@@ -103,9 +147,18 @@ const Translator = () => {
                 </label>
                 <select
                   className="w-full text-[.7rem] rounded-sm border-zinc-300 px-2 py-1 pr-7"
-                  name="language"
+                  value={language}
+                  onChange={(event) => {
+                    setLanguage(event.currentTarget.value);
+                  }}
                 >
-                  <option value="en-US">English (en-US)</option>
+                  {availableLanguages.map((language) => {
+                    return (
+                      <option key={language} value={language}>
+                        {language}
+                      </option>
+                    );
+                  })}
                 </select>
               </div>
             </form>
