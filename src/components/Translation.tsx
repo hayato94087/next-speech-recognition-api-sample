@@ -67,6 +67,8 @@ const Translator = () => {
       return;
     }
 
+    speak(" ");
+
     // クロスブラウザ対応のため、SpeechRecognition オブジェクトを取得
     const SpeechRecognition =
       window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -108,15 +110,22 @@ const Translator = () => {
       setTranslation(results.text);
 
       // 翻訳されたテキストを読み上げる
-      const utterance = new SpeechSynthesisUtterance(results.text);
-      if (activeVoice) {
-        utterance.voice = activeVoice;
-      }
-      window.speechSynthesis.speak(utterance);
+      speak(results.text);
     };
 
     // 録音を開始します。
     recognitionRef.current.start();
+  }
+
+  // 翻訳されたテキストを読み上げる
+  function speak(text: string) {
+    const utterance = new SpeechSynthesisUtterance(text);
+
+    if (activeVoice) {
+      utterance.voice = activeVoice;
+    }
+
+    window.speechSynthesis.speak(utterance);
   }
 
   return (
