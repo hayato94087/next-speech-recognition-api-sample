@@ -1,8 +1,10 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 
 const Translator = () => {
+  // Speech Recognition のインスタンス
+  const recognitionRef = useRef<SpeechRecognition>();
   // 翻訳されたテキストを保存するための state
   const [translation, setTranslation] = useState<string>();
   // 音声合成のための voice を保存するための state
@@ -12,7 +14,7 @@ const Translator = () => {
   // 認識されたテキストを保存するための state
   const [text, setText] = useState<string>();
   // true の場合は録音中、false の場合は録音していない
-  const isActive = false;
+  const [isActive, setIsActive] = useState<boolean>(false);
   // true の場合は音声が認識されている、false の場合は認識されていない
   const isSpeechDetected = false;
 
@@ -58,15 +60,31 @@ const Translator = () => {
   // 録音を処理する関数
   function handleOnRecord() {
     // console.log("handleOnRecord");
+    // 録音中の場合は録音を停止
+    if (isActive) {
+      recognitionRef.current?.stop();
+      setIsActive(false);
+      return;
+    }
 
     // クロスブラウザ対応のため、SpeechRecognition オブジェクトを取得
     const SpeechRecognition =
       window.SpeechRecognition || window.webkitSpeechRecognition;
 
     // Speech Recognition API のインスタンスを生成
-    const recognition = new SpeechRecognition();
+    recognitionRef.current = new SpeechRecognition();
 
-    recognition.onresult = async function (event) {
+    // 収録が開始されると isActive を true に設定
+    recognitionRef.current.onstart = function () {
+      setIsActive(true);
+    };
+
+    // 収録が終了すると isActive を false に設定
+    recognitionRef.current.onend = function () {
+      setIsActive(false);
+    };
+
+    recognitionRef.current.onresult = async function (event) {
       // ログとして書き出し中身を確認
       // console.log("event", event);
 
@@ -98,7 +116,7 @@ const Translator = () => {
     };
 
     // 録音を開始します。
-    recognition.start();
+    recognitionRef.current.start();
   }
 
   return (
